@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/sithu-go/ride-share/contracts/env"
+	"github.com/ride4Low/contracts/env"
 )
 
 var (

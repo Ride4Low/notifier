@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/sithu-go/ride-share/contracts/env"
+	"github.com/ride4Low/contracts/env"
 )
 
 var (
