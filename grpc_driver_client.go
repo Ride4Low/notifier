@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	pb "github.com/ride4Low/contracts/proto/driver"
 	"google.golang.org/grpc"
@@ -17,8 +18,14 @@ type DriverServiceClient struct {
 // NewDriverServiceClient creates a new DriverServiceClient
 func NewDriverServiceClient(address string) (*DriverServiceClient, error) {
 	// Establish connection to the driver service
-	conn, err := grpc.NewClient(
-		address,
+	log.Println("Connecting to driver service at:", address)
+
+	// conn, err := grpc.Dial(address,
+	// 	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	// 	grpc.WithBlock(),
+	// 	grpc.WithTimeout(5*time.Second),
+	// )
+	conn, err := grpc.NewClient(address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -26,6 +33,8 @@ func NewDriverServiceClient(address string) (*DriverServiceClient, error) {
 	}
 
 	client := pb.NewDriverServiceClient(conn)
+
+	log.Println("connected")
 
 	return &DriverServiceClient{
 		conn:   conn,

@@ -13,7 +13,7 @@ import (
 
 var (
 	NotifierAddr = env.GetString("NOTIFIER_ADDR", ":8082")
-	DriverAddr   = env.GetString("DRIVER_ADDR", ":9092")
+	DriverAddr   = env.GetString("DRIVER_SERVICE_ADDR", "driver-service:9092")
 )
 
 func main() {
@@ -25,6 +25,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create driver service client: %v", err)
 	}
+
+	log.Println("HEllo")
 
 	handler := newHandler(NewConnectionManager(), ds)
 
