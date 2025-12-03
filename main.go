@@ -13,6 +13,7 @@ import (
 
 var (
 	NotifierAddr = env.GetString("NOTIFIER_ADDR", ":8082")
+	DriverAddr   = env.GetString("DRIVER_ADDR", ":9092")
 )
 
 func main() {
@@ -20,11 +21,17 @@ func main() {
 
 	log.Println("Notifier starting on", NotifierAddr)
 
-	handler := newHandler(NewConnectionManager())
+	ds, err := NewDriverServiceClient(DriverAddr)
+	if err != nil {
+		log.Fatalf("Failed to create driver service client: %v", err)
+	}
+
+	handler := newHandler(NewConnectionManager(), ds)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/ws/riders", handler.handleRiders)
+	mux.HandleFunc("/ws/drivers", handler.handleDrivers)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt)
