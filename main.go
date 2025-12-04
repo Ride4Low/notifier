@@ -25,8 +25,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create driver service client: %v", err)
 	}
-
-	log.Println("HEllo")
+	defer ds.Close()
 
 	handler := newHandler(NewConnectionManager(), ds)
 

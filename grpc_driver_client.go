@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"time"
 
 	pb "github.com/ride4Low/contracts/proto/driver"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -15,16 +18,25 @@ type DriverServiceClient struct {
 	client pb.DriverServiceClient
 }
 
+// func validateTarget(addr string, timeout time.Duration) error {
+// 	conn, err := net.DialTimeout("tcp", addr, timeout)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to connect to driver service: %w", err)
+// 	}
+// 	conn.Close()
+// 	return nil
+// }
+
 // NewDriverServiceClient creates a new DriverServiceClient
 func NewDriverServiceClient(address string) (*DriverServiceClient, error) {
 	// Establish connection to the driver service
 	log.Println("Connecting to driver service at:", address)
 
-	// conn, err := grpc.Dial(address,
-	// 	grpc.WithTransportCredentials(insecure.NewCredentials()),
-	// 	grpc.WithBlock(),
-	// 	grpc.WithTimeout(5*time.Second),
-	// )
+	// if err := validateTarget(address, 5*time.Second); err != nil {
+	// 	log.Println("Failed to connect to driver service:", err)
+	// 	return nil, err
+	// }
+
 	conn, err := grpc.NewClient(address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -32,9 +44,13 @@ func NewDriverServiceClient(address string) (*DriverServiceClient, error) {
 		return nil, fmt.Errorf("failed to connect to driver service: %w", err)
 	}
 
-	client := pb.NewDriverServiceClient(conn)
+	if err := waitForReady(conn); err != nil {
+		return nil, fmt.Errorf("failed to connect to driver service: %w", err)
+	}
 
 	log.Println("connected")
+
+	client := pb.NewDriverServiceClient(conn)
 
 	return &DriverServiceClient{
 		conn:   conn,
@@ -48,4 +64,27 @@ func (c *DriverServiceClient) Close() error {
 		return c.conn.Close()
 	}
 	return nil
+}
+
+func waitForReady(conn *grpc.ClientConn) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	conn.Connect()
+
+	for {
+		state := conn.GetState()
+		log.Println("Current state:", state)
+
+		if state == connectivity.Ready {
+			log.Println("Connection is READY!")
+			return nil
+		}
+
+		// Block until state changes OR context times out
+		if !conn.WaitForStateChange(ctx, state) {
+			log.Println("Timeout waiting for state change")
+			return fmt.Errorf("timeout waiting for state change")
+		}
+	}
 }
