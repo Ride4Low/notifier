@@ -66,6 +66,10 @@ func (c *DriverServiceClient) Close() error {
 	return nil
 }
 
+// func (c *DriverServiceClient) GetState() connectivity.State {
+// 	return c.conn.GetState()
+// }
+
 func waitForReady(conn *grpc.ClientConn) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

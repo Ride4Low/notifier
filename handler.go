@@ -75,6 +75,7 @@ func (h *Handler) handleDrivers(w http.ResponseWriter, r *http.Request) {
 		PackageSlug: packageSlug,
 	}
 
+	// driverData, err := h.registerWithLog(ctx, driverReq)
 	driverData, err := h.ds.client.RegisterDriver(ctx, driverReq)
 	if err != nil {
 		log.Println("Error registering driver:", err)
@@ -105,3 +106,30 @@ func (h *Handler) handleDrivers(w http.ResponseWriter, r *http.Request) {
 		log.Println("Received message:", string(message))
 	}
 }
+
+// func (h *Handler) registerWithLog(ctx context.Context, req *pb.RegisterDriverRequest) (*pb.RegisterDriverResponse, error) {
+// 	state := h.ds.GetState()
+// 	log.Println(state)
+
+// 	quitChan := make(chan struct{}, 1)
+// 	defer func() {
+// 		quitChan <- struct{}{}
+// 	}()
+
+// 	go func() {
+// 		for {
+// 			time.Sleep(time.Millisecond)
+
+// 			select {
+// 			case <-quitChan:
+// 				return
+// 			default:
+// 				state := h.ds.GetState()
+// 				log.Println(state)
+
+// 			}
+// 		}
+// 	}()
+
+// 	return h.ds.client.RegisterDriver(ctx, req)
+// }
