@@ -9,25 +9,48 @@ import (
 	"time"
 
 	"github.com/ride4Low/contracts/env"
+	"github.com/ride4Low/contracts/events"
+	"github.com/ride4Low/contracts/pkg/rabbitmq"
 )
 
 var (
-	NotifierAddr = env.GetString("NOTIFIER_ADDR", ":8082")
-	DriverAddr   = env.GetString("DRIVER_SERVICE_ADDR", "driver-service:9092")
+	notifierAddr = env.GetString("NOTIFIER_ADDR", ":8082")
+	driverAddr   = env.GetString("DRIVER_SERVICE_ADDR", "driver-service:9092")
+	rabbitMQURI  = env.GetString("RABBITMQ_URI", "amqp://guest:guest@rabbitmq:5672/")
 )
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	log.Println("Notifier starting on", NotifierAddr)
+	log.Println("Notifier starting on", notifierAddr)
 
-	ds, err := NewDriverServiceClient(DriverAddr)
+	cm := NewConnectionManager()
+
+	// RabbitMQ Session
+	rmq, err := rabbitmq.NewRabbitMQ(rabbitMQURI)
+	if err != nil {
+		log.Fatalf("Failed to create connection manager: %v", err)
+	}
+
+	eventHandler := NewEventHandler(cm)
+	consumer := rabbitmq.NewConsumer(rmq, eventHandler)
+
+	queues := []string{
+		events.NotifyDriverNoDriversFoundQueue,
+	}
+	for _, queue := range queues {
+		if err := consumer.Consume(context.Background(), queue); err != nil {
+			log.Fatalf("Failed to consume queue: %v", err)
+		}
+	}
+
+	ds, err := NewDriverServiceClient(driverAddr)
 	if err != nil {
 		log.Fatalf("Failed to create driver service client: %v", err)
 	}
 	defer ds.Close()
 
-	handler := newHandler(NewConnectionManager(), ds)
+	handler := newHandler(cm, ds)
 
 	mux := http.NewServeMux()
 
@@ -38,7 +61,7 @@ func main() {
 	signal.Notify(shutdown, os.Interrupt)
 
 	server := &http.Server{
-		Addr:    NotifierAddr,
+		Addr:    notifierAddr,
 		Handler: mux,
 	}
 
