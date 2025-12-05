@@ -4,17 +4,20 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bytedance/sonic"
 	"github.com/ride4Low/contracts/events"
+	"github.com/ride4Low/contracts/pkg/rabbitmq"
 	pb "github.com/ride4Low/contracts/proto/driver"
 )
 
 type Handler struct {
-	cm *ConnectionManager
-	ds *DriverServiceClient
+	cm        *ConnectionManager
+	ds        *DriverServiceClient
+	publisher *rabbitmq.Publisher
 }
 
-func newHandler(cm *ConnectionManager, ds *DriverServiceClient) *Handler {
-	return &Handler{cm: cm, ds: ds}
+func newHandler(cm *ConnectionManager, ds *DriverServiceClient, publisher *rabbitmq.Publisher) *Handler {
+	return &Handler{cm: cm, ds: ds, publisher: publisher}
 }
 
 func (h *Handler) handleRiders(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +107,27 @@ func (h *Handler) handleDrivers(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		log.Println("Received message:", string(message))
+
+		var msg WSDriverMessage
+		if err := sonic.Unmarshal(message, &msg); err != nil {
+			log.Println("Error unmarshalling message:", err)
+			break
+		}
+
+		switch msg.Type {
+		case events.DriverCmdLocation:
+			// Handle driver location update in the future
+			continue
+		case events.DriverCmdTripAccept, events.DriverCmdTripDecline:
+			if err := h.publisher.PublishMessage(ctx, msg.Type, events.AmqpMessage{
+				OwnerID: userID,
+				Data:    msg.Data,
+			}); err != nil {
+				log.Printf("Error publishing message: %v", err)
+			}
+		default:
+			log.Printf("Unknown message type: %s", msg.Type)
+		}
 	}
 }
 

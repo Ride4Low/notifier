@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -17,6 +18,11 @@ var (
 type WSMessage struct {
 	Type string `json:"type"`
 	Data any    `json:"data"`
+}
+
+type WSDriverMessage struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
 }
 
 // connWrapper is a wrapper around the websocket connection to allow for thread-safe operations

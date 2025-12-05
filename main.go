@@ -32,6 +32,8 @@ func main() {
 		log.Fatalf("Failed to create connection manager: %v", err)
 	}
 
+	publisher := rabbitmq.NewPublisher(rmq)
+
 	eventHandler := NewEventHandler(cm)
 	consumer := rabbitmq.NewConsumer(rmq, eventHandler)
 
@@ -51,7 +53,7 @@ func main() {
 	}
 	defer ds.Close()
 
-	handler := newHandler(cm, ds)
+	handler := newHandler(cm, ds, publisher)
 
 	mux := http.NewServeMux()
 
