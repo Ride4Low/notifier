@@ -37,6 +37,7 @@ func main() {
 
 	queues := []string{
 		events.NotifyDriverNoDriversFoundQueue,
+		events.DriverCmdTripRequestQueue,
 	}
 	for _, queue := range queues {
 		if err := consumer.Consume(context.Background(), queue); err != nil {
