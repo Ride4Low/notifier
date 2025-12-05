@@ -32,6 +32,8 @@ func (h *EventHandler) Handle(ctx context.Context, msg amqp.Delivery) error {
 	// rider ws consume this.
 	case events.TripEventNoDriversFound:
 		return h.handleNoDriversFound(ctx, message)
+	case events.TripEventDriverAssigned:
+		return h.handleDriverAssigned(ctx, message)
 	// driver ws consume this.
 	case events.DriverCmdTripRequest:
 		return h.handleTripRequest(ctx, message)
@@ -40,10 +42,17 @@ func (h *EventHandler) Handle(ctx context.Context, msg amqp.Delivery) error {
 	}
 }
 
+// for riders ws
 func (h *EventHandler) handleNoDriversFound(_ context.Context, message events.AmqpMessage) error {
 	return h.sendWSMessage(message, events.TripEventNoDriversFound)
 }
 
+// for riders ws
+func (h *EventHandler) handleDriverAssigned(_ context.Context, message events.AmqpMessage) error {
+	return h.sendWSMessage(message, events.TripEventDriverAssigned)
+}
+
+// for drivers ws
 func (h *EventHandler) handleTripRequest(_ context.Context, message events.AmqpMessage) error {
 	return h.sendWSMessage(message, events.DriverCmdTripRequest)
 }

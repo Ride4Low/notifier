@@ -38,7 +38,11 @@ func main() {
 	consumer := rabbitmq.NewConsumer(rmq, eventHandler)
 
 	queues := []string{
+		// for riders
 		events.NotifyDriverNoDriversFoundQueue,
+		events.NotifyDriverAssignQueue,
+
+		// for drivers
 		events.DriverCmdTripRequestQueue,
 	}
 	for _, queue := range queues {
