@@ -37,6 +37,8 @@ func (h *EventHandler) Handle(ctx context.Context, msg amqp.Delivery) error {
 	// driver ws consume this.
 	case events.DriverCmdTripRequest:
 		return h.handleTripRequest(ctx, message)
+	case events.PaymentEventSessionCreated:
+		return h.handlePaymentSessionCreated(ctx, message)
 	default:
 		return fmt.Errorf("unknown routing key: %s", msg.RoutingKey)
 	}
@@ -55,6 +57,11 @@ func (h *EventHandler) handleDriverAssigned(_ context.Context, message events.Am
 // for drivers ws
 func (h *EventHandler) handleTripRequest(_ context.Context, message events.AmqpMessage) error {
 	return h.sendWSMessage(message, events.DriverCmdTripRequest)
+}
+
+// for drivers ws
+func (h *EventHandler) handlePaymentSessionCreated(_ context.Context, message events.AmqpMessage) error {
+	return h.sendWSMessage(message, events.PaymentEventSessionCreated)
 }
 
 // sendWSMessage validates the message, unmarshals the payload, and sends it via WebSocket.

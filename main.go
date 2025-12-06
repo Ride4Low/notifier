@@ -44,6 +44,7 @@ func main() {
 
 		// for drivers
 		events.DriverCmdTripRequestQueue,
+		events.NotifyPaymentSessionCreatedQueue,
 	}
 	for _, queue := range queues {
 		if err := consumer.Consume(context.Background(), queue); err != nil {
