@@ -78,7 +78,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    notifierAddr,
-		Handler: otel.NewHTTPHandler(mux, "notifier-http"),
+		Handler: otel.OTelOperationMiddleware(mux),
 	}
 
 	serverErrors := make(chan error)
