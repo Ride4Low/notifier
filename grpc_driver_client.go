@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ride4Low/contracts/pkg/otel"
 	pb "github.com/ride4Low/contracts/proto/driver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -37,9 +38,12 @@ func NewDriverServiceClient(address string) (*DriverServiceClient, error) {
 	// 	return nil, err
 	// }
 
-	conn, err := grpc.NewClient(address,
+	dialOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	}
+	dialOptions = append(dialOptions, otel.ClientOptions()...)
+
+	conn, err := grpc.NewClient(address, dialOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to driver service: %w", err)
 	}

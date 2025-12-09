@@ -10,6 +10,7 @@ import (
 
 	"github.com/ride4Low/contracts/env"
 	"github.com/ride4Low/contracts/events"
+	"github.com/ride4Low/contracts/pkg/otel"
 	"github.com/ride4Low/contracts/pkg/rabbitmq"
 )
 
@@ -23,6 +24,13 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	log.Println("Notifier starting on", notifierAddr)
+
+	otelCfg := otel.DefaultConfig("notifier")
+	otelProvider, err := otel.Setup(context.Background(), otelCfg)
+	if err != nil {
+		log.Fatalf("failed to setup otel: %v", err)
+	}
+	defer otelProvider.Shutdown(context.Background())
 
 	cm := NewConnectionManager()
 
@@ -70,7 +78,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    notifierAddr,
-		Handler: mux,
+		Handler: otel.NewHTTPHandler(mux, "notifier-http"),
 	}
 
 	serverErrors := make(chan error)
