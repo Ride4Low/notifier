@@ -6,17 +6,16 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/ride4Low/contracts/events"
-	"github.com/ride4Low/contracts/pkg/rabbitmq"
 	pb "github.com/ride4Low/contracts/proto/driver"
 )
 
 type Handler struct {
 	cm        *ConnectionManager
 	ds        *DriverServiceClient
-	publisher *rabbitmq.Publisher
+	publisher EventPublisher
 }
 
-func newHandler(cm *ConnectionManager, ds *DriverServiceClient, publisher *rabbitmq.Publisher) *Handler {
+func newHandler(cm *ConnectionManager, ds *DriverServiceClient, publisher EventPublisher) *Handler {
 	return &Handler{cm: cm, ds: ds, publisher: publisher}
 }
 
@@ -44,6 +43,22 @@ func (h *Handler) handleRiders(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		log.Println("Received message:", string(message))
+
+		var msg WSDriverMessage
+		if err := sonic.Unmarshal(message, &msg); err != nil {
+			log.Println("Error unmarshalling message:", err)
+			break
+		}
+
+		switch msg.Type {
+		case events.PaymentCmdSelectCard:
+			if err := h.publisher.PublishStripeCreateSession(r.Context(), userID, msg.Data); err != nil {
+				log.Println("Error publishing message:", err)
+			}
+		default:
+			log.Println("Unknown message type:", msg.Type)
+		}
+
 	}
 
 }
@@ -119,10 +134,7 @@ func (h *Handler) handleDrivers(w http.ResponseWriter, r *http.Request) {
 			// Handle driver location update in the future
 			continue
 		case events.DriverCmdTripAccept, events.DriverCmdTripDecline:
-			if err := h.publisher.PublishMessage(ctx, msg.Type, events.AmqpMessage{
-				OwnerID: userID,
-				Data:    msg.Data,
-			}); err != nil {
+			if err := h.publisher.PublishWithData(ctx, msg.Type, userID, msg.Data); err != nil {
 				log.Printf("Error publishing message: %v", err)
 			}
 		default:
